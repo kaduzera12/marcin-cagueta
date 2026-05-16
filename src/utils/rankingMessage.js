@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const fs = require('fs');
+const { readJson, writeJson } = require('./storage');
 const path = require('path');
 
 const rankingPath = path.join(__dirname, '../data/ranking.json');
@@ -24,7 +24,7 @@ function formatElo(entry) {
 }
 
 function buildRankingEmbed() {
-  const rankingData = JSON.parse(fs.readFileSync(rankingPath));
+  const rankingData = readJson(rankingPath, { ranking: [] });
   const sorted = [...rankingData.ranking].sort((a, b) => eloScore(b) - eloScore(a));
 
   const medals = ['🥇', '🥈', '🥉'];
@@ -48,7 +48,7 @@ async function updateRankingMessage(client) {
   if (!channel) return;
 
   const embed = buildRankingEmbed();
-  const msgData = JSON.parse(fs.readFileSync(rankingMsgPath));
+  const msgData = readJson(rankingMsgPath, { messageId: null });
 
   if (msgData.messageId) {
     try {
@@ -62,7 +62,7 @@ async function updateRankingMessage(client) {
 
   const sent = await channel.send({ embeds: [embed] });
   msgData.messageId = sent.id;
-  fs.writeFileSync(rankingMsgPath, JSON.stringify(msgData, null, 2));
+  writeJson(rankingMsgPath, msgData);
 }
 
 module.exports = { updateRankingMessage, eloScore, formatElo };

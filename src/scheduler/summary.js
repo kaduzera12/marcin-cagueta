@@ -2,7 +2,7 @@ const cron = require('node-cron');
 const { EmbedBuilder } = require('discord.js');
 const { getMatchIds, getMatch, getRankedStats } = require('../riot/api');
 const { updateRankingMessage, formatElo } = require('../utils/rankingMessage');
-const fs = require('fs');
+const { readJson, writeJson } = require('../utils/storage');
 const path = require('path');
 
 const playersPath = path.join(__dirname, '../data/players.json');
@@ -21,9 +21,9 @@ function getDayTimestamps(date) {
 }
 
 async function generateSummary(client, targetDate = new Date()) {
-  const playersData = JSON.parse(fs.readFileSync(playersPath));
-  const rankingData = JSON.parse(fs.readFileSync(rankingPath));
-  const processedData = JSON.parse(fs.readFileSync(processedPath));
+  const playersData = readJson(playersPath, { players: [] });
+  const rankingData = readJson(rankingPath, { ranking: [] });
+  const processedData = readJson(processedPath, { dates: [] });
 
   if (playersData.players.length === 0) return;
 
@@ -84,11 +84,11 @@ async function generateSummary(client, targetDate = new Date()) {
     }
   }
 
-  fs.writeFileSync(rankingPath, JSON.stringify(rankingData, null, 2));
+  writeJson(rankingPath, rankingData);
 
   if (!alreadyProcessed) {
     processedData.dates.push(dateKey);
-    fs.writeFileSync(processedPath, JSON.stringify(processedData, null, 2));
+    writeJson(processedPath, processedData);
   }
 
   await updateRankingMessage(client);
