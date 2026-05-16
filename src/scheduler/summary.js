@@ -1,7 +1,8 @@
 const cron = require('node-cron');
 const { EmbedBuilder } = require('discord.js');
 const { getMatchIds, getMatch, getRankedStats, getLastRankedDate } = require('../riot/api');
-const { updateRankingMessage, formatElo } = require('../utils/rankingMessage');
+const { formatElo } = require('../utils/rankingMessage');
+const { refreshElo } = require('../utils/refreshElo');
 const { readJson, writeJson } = require('../utils/storage');
 const path = require('path');
 
@@ -53,20 +54,12 @@ async function generateSummary(client, targetDate = new Date()) {
   const alreadyProcessed = processedData.dates.includes(dateKey);
   const playerResults = [];
 
+  await refreshElo(client);
+  const rankingData = readJson(rankingPath, { ranking: [] });
+
   for (const player of playersData.players) {
     try {
-      const ranked = await getRankedStats(player.puuid);
       const rankEntry = rankingData.ranking.find(r => r.riotId.toLowerCase() === player.riotId.toLowerCase());
-      if (rankEntry && ranked) {
-        rankEntry.tier = ranked.tier;
-        rankEntry.rank = ranked.rank;
-        rankEntry.lp = ranked.leaguePoints;
-      } else if (rankEntry) {
-        rankEntry.tier = null;
-        rankEntry.rank = null;
-        rankEntry.lp = null;
-      }
-
       const matchIds = await getMatchIds(player.puuid, startTime, endTime);
 
       if (matchIds.length === 0) {
@@ -102,14 +95,10 @@ async function generateSummary(client, targetDate = new Date()) {
     }
   }
 
-  writeJson(rankingPath, rankingData);
-
   if (!alreadyProcessed) {
     processedData.dates.push(dateKey);
     writeJson(processedPath, processedData);
   }
-
-  await updateRankingMessage(client);
 
   let description = '';
   for (const result of playerResults) {
