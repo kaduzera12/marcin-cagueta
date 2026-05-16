@@ -11,6 +11,13 @@ const rankingPath = path.join(__dirname, '../data/ranking.json');
 const processedPath = path.join(__dirname, '../data/processed-dates.json');
 const summaryMsgPath = path.join(__dirname, '../data/summary-messages.json');
 
+function diasDesdeUltimoJogo(lastDate) {
+  const fmt = d => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(d);
+  const hoje = new Date(fmt(new Date()) + 'T00:00:00');
+  const ultimo = new Date(fmt(lastDate) + 'T00:00:00');
+  return Math.round((hoje - ultimo) / (1000 * 60 * 60 * 24));
+}
+
 function getDayTimestamps(date) {
   const start = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
   const end = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
@@ -107,7 +114,7 @@ async function generateSummary(client, targetDate = new Date()) {
       const elo = result.rankEntry ? formatElo(result.rankEntry) : 'Sem ranking';
       let diasSemJogar = '';
       if (result.lastDate) {
-        const dias = Math.floor((new Date() - result.lastDate) / (1000 * 60 * 60 * 24));
+        const dias = diasDesdeUltimoJogo(result.lastDate);
         diasSemJogar = dias === 0 ? ' · jogou mais cedo hoje' : dias === 1 ? ' · último jogo ontem' : ` · ${dias} dias sem jogar`;
       } else {
         diasSemJogar = ' · nunca jogou ranked';
