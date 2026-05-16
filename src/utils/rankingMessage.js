@@ -7,7 +7,20 @@ const rankingMsgPath = path.join(__dirname, '../data/ranking-message.json');
 
 const TIER_ORDER = { CHALLENGER: 9, GRANDMASTER: 8, MASTER: 7, DIAMOND: 6, EMERALD: 5, PLATINUM: 4, GOLD: 3, SILVER: 2, BRONZE: 1, IRON: 0 };
 const RANK_ORDER = { I: 4, II: 3, III: 2, IV: 1 };
-const TIER_PT = { CHALLENGER: 'Challenger', GRANDMASTER: 'Grão-mestre', MASTER: 'Mestre', DIAMOND: 'Diamante', EMERALD: 'Esmeralda', PLATINUM: 'Platina', GOLD: 'Ouro', SILVER: 'Prata', BRONZE: 'Bronze', IRON: 'Ferro' };
+
+const TIER_PT = {
+  CHALLENGER: 'Challenger', GRANDMASTER: 'Grão-mestre', MASTER: 'Mestre',
+  DIAMOND: 'Diamante', EMERALD: 'Esmeralda', PLATINUM: 'Platina',
+  GOLD: 'Ouro', SILVER: 'Prata', BRONZE: 'Bronze', IRON: 'Ferro'
+};
+
+const TIER_EMOJI = {
+  CHALLENGER: '🔶', GRANDMASTER: '🔴', MASTER: '🟣',
+  DIAMOND: '💎', EMERALD: '💚', PLATINUM: '🩵',
+  GOLD: '🟡', SILVER: '⚪', BRONZE: '🟤', IRON: '⬛'
+};
+
+const POSITION_EMOJI = ['🥇', '🥈', '🥉'];
 
 function eloScore(entry) {
   if (!entry.tier) return -1;
@@ -23,21 +36,32 @@ function formatElo(entry) {
   return `${tier} ${entry.rank} · ${entry.lp} LP`;
 }
 
+const DIVIDER = '┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄';
+
 function buildRankingEmbed() {
   const rankingData = readJson(rankingPath, { ranking: [] });
   const sorted = [...rankingData.ranking].sort((a, b) => eloScore(b) - eloScore(a));
 
-  const medals = ['🥇', '🥈', '🥉'];
-  const lines = sorted.length > 0
-    ? sorted.map((p, i) => {
-        const pos = medals[i] ?? `**${i + 1}.**`;
-        return `${pos} **${p.riotId}** — ${formatElo(p)}`;
-      })
-    : ['Nenhum jogador cadastrado ainda.'];
+  if (sorted.length === 0) {
+    return new EmbedBuilder()
+      .setTitle('🏆 Ranking — Marcin Cagueta')
+      .setDescription('Nenhum jogador cadastrado ainda.')
+      .setColor(0xffd700)
+      .setTimestamp();
+  }
+
+  const lines = sorted.map((p, i) => {
+    const pos = POSITION_EMOJI[i] ?? `**${i + 1}.**`;
+    const tierEmoji = p.tier ? (TIER_EMOJI[p.tier] ?? '❓') : '❓';
+    const elo = formatElo(p);
+    return `${pos}  **${p.riotId}**\n${tierEmoji}  ${elo}`;
+  });
+
+  const description = lines.join(`\n\n${DIVIDER}\n\n`);
 
   return new EmbedBuilder()
     .setTitle('🏆 Ranking — Marcin Cagueta')
-    .setDescription(lines.join('\n'))
+    .setDescription(description)
     .setColor(0xffd700)
     .setFooter({ text: 'Atualizado em' })
     .setTimestamp();

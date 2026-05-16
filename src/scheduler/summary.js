@@ -8,6 +8,7 @@ const path = require('path');
 const playersPath = path.join(__dirname, '../data/players.json');
 const rankingPath = path.join(__dirname, '../data/ranking.json');
 const processedPath = path.join(__dirname, '../data/processed-dates.json');
+const summaryMsgPath = path.join(__dirname, '../data/summary-messages.json');
 
 function getDayTimestamps(date) {
   const start = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
@@ -18,6 +19,24 @@ function getDayTimestamps(date) {
     dateStr: date.toLocaleDateString('pt-BR'),
     dateKey: start.toISOString().slice(0, 10),
   };
+}
+
+async function sendOrEditSummary(channel, embed, dateKey) {
+  const summaryMessages = readJson(summaryMsgPath, {});
+
+  if (summaryMessages[dateKey]) {
+    try {
+      const msg = await channel.messages.fetch(summaryMessages[dateKey]);
+      await msg.edit({ embeds: [embed] });
+      return;
+    } catch {
+      // mensagem deletada, cria nova
+    }
+  }
+
+  const sent = await channel.send({ embeds: [embed] });
+  summaryMessages[dateKey] = sent.id;
+  writeJson(summaryMsgPath, summaryMessages);
 }
 
 async function generateSummary(client, targetDate = new Date()) {
@@ -36,7 +55,6 @@ async function generateSummary(client, targetDate = new Date()) {
 
   for (const player of playersData.players) {
     try {
-      // Atualiza elo atual
       const ranked = await getRankedStats(player.puuid);
       const rankEntry = rankingData.ranking.find(r => r.riotId.toLowerCase() === player.riotId.toLowerCase());
       if (rankEntry && ranked) {
@@ -49,7 +67,6 @@ async function generateSummary(client, targetDate = new Date()) {
         rankEntry.lp = null;
       }
 
-      // Busca partidas do dia
       const matchIds = await getMatchIds(player.puuid, startTime, endTime);
 
       if (matchIds.length === 0) {
@@ -117,7 +134,7 @@ async function generateSummary(client, targetDate = new Date()) {
     .setColor(0x5865f2)
     .setTimestamp();
 
-  await channel.send({ embeds: [embed] });
+  await sendOrEditSummary(channel, embed, dateKey);
 }
 
 function scheduleSummary(client) {
