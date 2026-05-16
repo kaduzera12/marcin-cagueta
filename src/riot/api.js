@@ -18,6 +18,14 @@ async function getRankedStats(puuid) {
   return solo ?? null;
 }
 
+async function getLastRankedDate(puuid) {
+  const url = `${REGIONAL}/lol/match/v5/matches/by-puuid/${puuid}/ids`;
+  const res = await axios.get(url, { headers: headers(), params: { count: 1, queue: 420 } });
+  if (!res.data.length) return null;
+  const match = await axios.get(`${REGIONAL}/lol/match/v5/matches/${res.data[0]}`, { headers: headers() });
+  return new Date(match.data.info.gameCreation);
+}
+
 async function getMatchIds(puuid, startTime, endTime) {
   const url = `${REGIONAL}/lol/match/v5/matches/by-puuid/${puuid}/ids`;
   const params = { startTime, count: 20, queue: 420 }; // 420 = Ranked Solo/Duo
@@ -32,4 +40,4 @@ async function getMatch(matchId) {
   return res.data;
 }
 
-module.exports = { getAccountByRiotId, getRankedStats, getMatchIds, getMatch };
+module.exports = { getAccountByRiotId, getRankedStats, getLastRankedDate, getMatchIds, getMatch };

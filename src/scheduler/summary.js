@@ -1,6 +1,6 @@
 const cron = require('node-cron');
 const { EmbedBuilder } = require('discord.js');
-const { getMatchIds, getMatch, getRankedStats } = require('../riot/api');
+const { getMatchIds, getMatch, getRankedStats, getLastRankedDate } = require('../riot/api');
 const { updateRankingMessage, formatElo } = require('../utils/rankingMessage');
 const { readJson, writeJson } = require('../utils/storage');
 const path = require('path');
@@ -70,7 +70,8 @@ async function generateSummary(client, targetDate = new Date()) {
       const matchIds = await getMatchIds(player.puuid, startTime, endTime);
 
       if (matchIds.length === 0) {
-        playerResults.push({ riotId: player.riotId, played: false, rankEntry });
+        const lastDate = await getLastRankedDate(player.puuid);
+        playerResults.push({ riotId: player.riotId, played: false, rankEntry, lastDate });
         continue;
       }
 
@@ -116,7 +117,14 @@ async function generateSummary(client, targetDate = new Date()) {
       description += `⚠️ **${result.riotId}** — erro ao buscar dados\n\n`;
     } else if (!result.played) {
       const elo = result.rankEntry ? formatElo(result.rankEntry) : 'Sem ranking';
-      description += `❌ **${result.riotId}** — não jogou · ${elo}\n\n`;
+      let diasSemJogar = '';
+      if (result.lastDate) {
+        const dias = Math.floor((new Date() - result.lastDate) / (1000 * 60 * 60 * 24));
+        diasSemJogar = dias === 0 ? ' · jogou mais cedo hoje' : dias === 1 ? ' · último jogo ontem' : ` · ${dias} dias sem jogar`;
+      } else {
+        diasSemJogar = ' · nunca jogou ranked';
+      }
+      description += `❌ **${result.riotId}** — não jogou · ${elo}${diasSemJogar}\n\n`;
     } else {
       const elo = result.rankEntry ? formatElo(result.rankEntry) : 'Sem ranking';
       description += `✅ **${result.riotId}** — ${result.wins}V ${result.losses}D · ${elo}\n`;
