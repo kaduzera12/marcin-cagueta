@@ -1,0 +1,16 @@
+{
+  "name": "marcin-cagueta",
+  "version": "1.0.0",
+  "description": "Bot de Discord para acompanhar partidas de League of Legends",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "deploy": "node src/deploy-commands.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "discord.js": "^14.14.0",
+    "dotenv": "^16.3.0",
+    "node-cron": "^3.0.3"
+  }
+}
