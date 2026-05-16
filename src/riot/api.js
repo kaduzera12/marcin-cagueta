@@ -20,7 +20,7 @@ async function getRankedStats(puuid) {
 
 async function getMatchIds(puuid, startTime, endTime) {
   const url = `${REGIONAL}/lol/match/v5/matches/by-puuid/${puuid}/ids`;
-  const params = { startTime, count: 20 };
+  const params = { startTime, count: 20, queue: 420 }; // 420 = Ranked Solo/Duo
   if (endTime) params.endTime = endTime;
   const res = await axios.get(url, { headers: headers(), params });
   return res.data;
