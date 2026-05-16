@@ -1,2 +1,6 @@
 node_modules/
 .env
+src/data/players.json
+src/data/ranking.json
+src/data/ranking-message.json
+src/data/processed-dates.json
