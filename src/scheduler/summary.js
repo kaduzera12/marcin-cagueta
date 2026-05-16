@@ -1,6 +1,6 @@
 const cron = require('node-cron');
 const { EmbedBuilder } = require('discord.js');
-const { getMatchIds, getMatch, getRankedStats, getLastRankedDate } = require('../riot/api');
+const { getMatchIds, getMatch, getLastRankedDate } = require('../riot/api');
 const { formatElo } = require('../utils/rankingMessage');
 const { refreshElo } = require('../utils/refreshElo');
 const { readJson, writeJson } = require('../utils/storage');
@@ -42,7 +42,6 @@ async function sendOrEditSummary(channel, embed, dateKey) {
 
 async function generateSummary(client, targetDate = new Date()) {
   const playersData = readJson(playersPath, { players: [] });
-  const rankingData = readJson(rankingPath, { ranking: [] });
   const processedData = readJson(processedPath, { dates: [] });
 
   if (playersData.players.length === 0) return;
