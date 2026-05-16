@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { generateSummary } = require('../scheduler/summary');
 
 module.exports = {
@@ -14,7 +14,7 @@ module.exports = {
         )
     ),
   async execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const dia = interaction.options.getString('dia') ?? 'hoje';
     const targetDate = new Date();

@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Collection } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, MessageFlags } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const { scheduleSummary } = require('./src/scheduler/summary');
@@ -26,11 +26,16 @@ client.on('interactionCreate', async interaction => {
     await command.execute(interaction);
   } catch (err) {
     console.error(err);
-    const msg = { content: 'Ocorreu um erro ao executar esse comando.', ephemeral: true };
-    interaction.replied || interaction.deferred
-      ? await interaction.editReply(msg)
-      : await interaction.reply(msg);
+    try {
+      const msg = { content: 'Ocorreu um erro ao executar esse comando.', flags: MessageFlags.Ephemeral };
+      interaction.replied || interaction.deferred
+        ? await interaction.editReply(msg)
+        : await interaction.reply(msg);
+    } catch { /* interaction expirada, ignora */ }
   }
 });
+
+client.on('error', err => console.error('Discord client error:', err));
+process.on('unhandledRejection', err => console.error('Unhandled rejection:', err));
 
 client.login(process.env.DISCORD_TOKEN);
