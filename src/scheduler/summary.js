@@ -37,7 +37,7 @@ async function generateSummary(client, targetDate = new Date()) {
   for (const player of playersData.players) {
     try {
       // Atualiza elo atual
-      const ranked = await getRankedStats(player.summonerId);
+      const ranked = await getRankedStats(player.puuid);
       const rankEntry = rankingData.ranking.find(r => r.riotId.toLowerCase() === player.riotId.toLowerCase());
       if (rankEntry && ranked) {
         rankEntry.tier = ranked.tier;

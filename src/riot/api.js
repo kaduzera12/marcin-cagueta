@@ -11,14 +11,8 @@ async function getAccountByRiotId(gameName, tagLine) {
   return res.data;
 }
 
-async function getSummonerByPuuid(puuid) {
-  const url = `${PLATFORM()}/lol/summoner/v4/summoners/by-puuid/${puuid}`;
-  const res = await axios.get(url, { headers: headers() });
-  return res.data;
-}
-
-async function getRankedStats(summonerId) {
-  const url = `${PLATFORM()}/lol/league/v4/entries/by-summoner/${summonerId}`;
+async function getRankedStats(puuid) {
+  const url = `${PLATFORM()}/lol/league/v4/entries/by-puuid/${puuid}`;
   const res = await axios.get(url, { headers: headers() });
   const solo = res.data.find(e => e.queueType === 'RANKED_SOLO_5x5');
   return solo ?? null;
@@ -38,4 +32,4 @@ async function getMatch(matchId) {
   return res.data;
 }
 
-module.exports = { getAccountByRiotId, getSummonerByPuuid, getRankedStats, getMatchIds, getMatch };
+module.exports = { getAccountByRiotId, getRankedStats, getMatchIds, getMatch };

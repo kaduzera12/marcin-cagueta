@@ -1,10 +1,9 @@
 require('dotenv').config();
 const axios = require('axios');
-const fs = require('fs');
 const path = require('path');
+const { readJson, writeJson } = require('./src/utils/storage');
 
 const REGIONAL = 'https://americas.api.riotgames.com';
-const PLATFORM = `https://${(process.env.REGION || 'br1').toLowerCase()}.api.riotgames.com`;
 const headers = { 'X-Riot-Token': process.env.RIOT_API_KEY };
 
 const playersPath = path.join(__dirname, 'src/data/players.json');
@@ -25,31 +24,22 @@ async function setup() {
 
   for (const p of PLAYERS) {
     try {
-      const accountRes = await axios.get(
-        `${REGIONAL}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(p.gameName)}/${encodeURIComponent(p.tagLine)}`,
-        { headers }
-      );
-      const { gameName, tagLine, puuid } = accountRes.data;
-
-      const summonerRes = await axios.get(
-        `${PLATFORM}/lol/summoner/v4/summoners/by-puuid/${puuid}`,
-        { headers }
-      );
-      const summonerId = summonerRes.data.id;
-
+      const url = `${REGIONAL}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(p.gameName)}/${encodeURIComponent(p.tagLine)}`;
+      const res = await axios.get(url, { headers });
+      const { gameName, tagLine, puuid } = res.data;
       const riotId = `${gameName}#${tagLine}`;
-      playersData.players.push({ riotId, puuid, summonerId });
+
+      playersData.players.push({ riotId, puuid });
       rankingData.ranking.push({ riotId, tier: null, rank: null, lp: null });
 
-      console.log(`✅ ${riotId} — summonerId ok`);
+      console.log(`✅ ${riotId}`);
     } catch (err) {
-      const riotId = `${p.gameName}#${p.tagLine}`;
-      console.error(`❌ ${riotId} — ${err.response?.status ?? err.message}`);
+      console.error(`❌ ${p.gameName}#${p.tagLine} — ${err.response?.status ?? err.message}`);
     }
   }
 
-  fs.writeFileSync(playersPath, JSON.stringify(playersData, null, 2));
-  fs.writeFileSync(rankingPath, JSON.stringify(rankingData, null, 2));
+  writeJson(playersPath, playersData);
+  writeJson(rankingPath, rankingData);
   console.log(`\nFeito. ${playersData.players.length} jogadores cadastrados.`);
 }
 
