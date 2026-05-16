@@ -1,1 +1,28 @@
-{ "players": [] }
+{
+  "players": [
+    {
+      "riotId": "El Kaduzera#BR1",
+      "puuid": "eT4ZTiS4YVcjPMcG1h5MbvEklPvCUmZp7HHuVOfIQzAXhFTSR1ELfJQQD0pEl5OlvY4b-HkcuOtwuw"
+    },
+    {
+      "riotId": "SatHell#br1",
+      "puuid": "wIJ50OdLgGG9MxJZQod9EMK6pKrc7XockkttKhGT3zPGiQXZHK1F2veyt_Unk3jyQ28dkImOD0rm7Q"
+    },
+    {
+      "riotId": "TEREZÃO A LENDAシ#TRZ",
+      "puuid": "9SySnmAm4_gSGs6ml7PxYDPxxSgD0KA-0nDZ3wkZQhR4w9UM5cAzSkZQWb3rAyV8Xcr633vdlXGvVQ"
+    },
+    {
+      "riotId": "TTVMediivih#MDV",
+      "puuid": "0nRcMazl2mjc65oAflxq5Pg1k-_YE25OwamTwL_F0D4uN2SO2QzllG0CBbOz80TxyGBAHnT0dTZOjg"
+    },
+    {
+      "riotId": "SINGED OLDSCHOOL#GO064",
+      "puuid": "p7-M8iBQA6T0weiL5uds98IcwzGsmi7rFDhMSgQZWwSwqv2NFLer5wF6DLCLjisENIqxMSGriRPLlQ"
+    },
+    {
+      "riotId": "72off#111",
+      "puuid": "lV39mKurAgVAKcUurlbtd7PAY1wnru11BPoNY_uyyvquNfAhHkjTXXHyFs3cPuKyuaSyN3O5TJogig"
+    }
+  ]
+}

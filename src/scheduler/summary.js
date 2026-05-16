@@ -1,37 +1,59 @@
 const cron = require('node-cron');
 const { EmbedBuilder } = require('discord.js');
-const { getMatchIds, getMatch } = require('../riot/api');
-const { updateRankingMessage } = require('../utils/rankingMessage');
+const { getMatchIds, getMatch, getRankedStats } = require('../riot/api');
+const { updateRankingMessage, formatElo } = require('../utils/rankingMessage');
 const fs = require('fs');
 const path = require('path');
 
 const playersPath = path.join(__dirname, '../data/players.json');
 const rankingPath = path.join(__dirname, '../data/ranking.json');
+const processedPath = path.join(__dirname, '../data/processed-dates.json');
 
-function getTodayStartTimestamp() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-  return Math.floor(start.getTime() / 1000);
+function getDayTimestamps(date) {
+  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
+  const end = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+  return {
+    startTime: Math.floor(start.getTime() / 1000),
+    endTime: Math.floor(end.getTime() / 1000),
+    dateStr: date.toLocaleDateString('pt-BR'),
+    dateKey: start.toISOString().slice(0, 10),
+  };
 }
 
-async function generateSummary(client) {
+async function generateSummary(client, targetDate = new Date()) {
   const playersData = JSON.parse(fs.readFileSync(playersPath));
   const rankingData = JSON.parse(fs.readFileSync(rankingPath));
+  const processedData = JSON.parse(fs.readFileSync(processedPath));
 
   if (playersData.players.length === 0) return;
 
   const channel = await client.channels.fetch(process.env.SUMMARY_CHANNEL_ID);
   if (!channel) return;
 
-  const startTime = getTodayStartTimestamp();
+  const { startTime, endTime, dateStr, dateKey } = getDayTimestamps(targetDate);
+  const alreadyProcessed = processedData.dates.includes(dateKey);
   const playerResults = [];
 
   for (const player of playersData.players) {
     try {
-      const matchIds = await getMatchIds(player.puuid, startTime);
+      // Atualiza elo atual
+      const ranked = await getRankedStats(player.summonerId);
+      const rankEntry = rankingData.ranking.find(r => r.riotId.toLowerCase() === player.riotId.toLowerCase());
+      if (rankEntry && ranked) {
+        rankEntry.tier = ranked.tier;
+        rankEntry.rank = ranked.rank;
+        rankEntry.lp = ranked.leaguePoints;
+      } else if (rankEntry) {
+        rankEntry.tier = null;
+        rankEntry.rank = null;
+        rankEntry.lp = null;
+      }
+
+      // Busca partidas do dia
+      const matchIds = await getMatchIds(player.puuid, startTime, endTime);
 
       if (matchIds.length === 0) {
-        playerResults.push({ riotId: player.riotId, played: false });
+        playerResults.push({ riotId: player.riotId, played: false, rankEntry });
         continue;
       }
 
@@ -45,43 +67,42 @@ async function generateSummary(client) {
         if (!participant) continue;
 
         const win = participant.win;
-        const champion = participant.championName;
-        const kills = participant.kills;
-        const deaths = participant.deaths;
-        const assists = participant.assists;
-
-        if (win) wins++;
-        else losses++;
-
-        matches.push({ win, champion, kills, deaths, assists });
+        if (win) wins++; else losses++;
+        matches.push({
+          win,
+          champion: participant.championName,
+          kills: participant.kills,
+          deaths: participant.deaths,
+          assists: participant.assists,
+        });
       }
 
-      const rankEntry = rankingData.ranking.find(r => r.riotId.toLowerCase() === player.riotId.toLowerCase());
-      if (rankEntry) {
-        rankEntry.points += wins - losses;
-        rankEntry.wins += wins;
-        rankEntry.losses += losses;
-      }
-
-      playerResults.push({ riotId: player.riotId, played: true, matches, wins, losses });
+      playerResults.push({ riotId: player.riotId, played: true, matches, wins, losses, rankEntry });
     } catch (err) {
-      console.error(`Erro ao buscar partidas de ${player.riotId}:`, err.message);
+      console.error(`Erro ao buscar dados de ${player.riotId}:`, err.message);
       playerResults.push({ riotId: player.riotId, played: false, error: true });
     }
   }
 
   fs.writeFileSync(rankingPath, JSON.stringify(rankingData, null, 2));
 
-  const today = new Date().toLocaleDateString('pt-BR');
-  let description = '';
+  if (!alreadyProcessed) {
+    processedData.dates.push(dateKey);
+    fs.writeFileSync(processedPath, JSON.stringify(processedData, null, 2));
+  }
 
+  await updateRankingMessage(client);
+
+  let description = '';
   for (const result of playerResults) {
     if (result.error) {
       description += `⚠️ **${result.riotId}** — erro ao buscar dados\n\n`;
     } else if (!result.played) {
-      description += `❌ **${result.riotId}** — não jogou hoje\n\n`;
+      const elo = result.rankEntry ? formatElo(result.rankEntry) : 'Sem ranking';
+      description += `❌ **${result.riotId}** — não jogou · ${elo}\n\n`;
     } else {
-      description += `✅ **${result.riotId}** — ${result.wins}V ${result.losses}D\n`;
+      const elo = result.rankEntry ? formatElo(result.rankEntry) : 'Sem ranking';
+      description += `✅ **${result.riotId}** — ${result.wins}V ${result.losses}D · ${elo}\n`;
       for (const m of result.matches) {
         const outcome = m.win ? '🟢 Vitória' : '🔴 Derrota';
         description += `　${outcome} · ${m.champion} · ${m.kills}/${m.deaths}/${m.assists}\n`;
@@ -91,13 +112,12 @@ async function generateSummary(client) {
   }
 
   const embed = new EmbedBuilder()
-    .setTitle(`📋 Resumo do Dia — ${today}`)
+    .setTitle(`📋 Resumo do Dia — ${dateStr}`)
     .setDescription(description.trim() || 'Nenhum dado disponível.')
     .setColor(0x5865f2)
     .setTimestamp();
 
   await channel.send({ embeds: [embed] });
-  await updateRankingMessage(client);
 }
 
 function scheduleSummary(client) {
