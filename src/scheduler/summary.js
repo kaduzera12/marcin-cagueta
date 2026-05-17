@@ -19,13 +19,21 @@ function diasDesdeUltimoJogo(lastDate) {
 }
 
 function getDayTimestamps(date) {
-  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
-  const end = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+  const brtDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(date);
+  const [year, month, day] = brtDateStr.split('-').map(Number);
+
+  // BRT = UTC-3 (sem horário de verão desde 2019)
+  // meia-noite BRT = 03:00 UTC mesmo dia; 23:59:59 BRT = 02:59:59 UTC dia seguinte
+  const start = new Date(Date.UTC(year, month - 1, day, 3, 0, 0));
+  const end   = new Date(Date.UTC(year, month - 1, day + 1, 2, 59, 59));
+
+  const dateStr = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo' }).format(date);
+
   return {
     startTime: Math.floor(start.getTime() / 1000),
     endTime: Math.floor(end.getTime() / 1000),
-    dateStr: date.toLocaleDateString('pt-BR'),
-    dateKey: start.toISOString().slice(0, 10),
+    dateStr,
+    dateKey: brtDateStr,
   };
 }
 
