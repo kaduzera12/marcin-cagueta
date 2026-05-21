@@ -54,7 +54,13 @@ function buildRankingEmbed() {
     const pos = POSITION_EMOJI[i] ?? `**${i + 1}.**`;
     const tierEmoji = p.tier ? (TIER_EMOJI[p.tier] ?? '❓') : '❓';
     const elo = formatElo(p);
-    return `${pos}  **${p.riotId}**\n${tierEmoji}  ${elo}`;
+    let stats = '';
+    if (p.wins != null && p.losses != null) {
+      const total = p.wins + p.losses;
+      const wr = Math.round((p.wins / total) * 100);
+      stats = `  ·  ${total}P  ${wr}%W`;
+    }
+    return `${pos}  **${p.riotId}**\n${tierEmoji}  ${elo}${stats}`;
   });
 
   const description = lines.join(`\n\n${DIVIDER}\n\n`);

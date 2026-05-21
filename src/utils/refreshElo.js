@@ -19,10 +19,14 @@ async function refreshElo(client) {
         entry.tier = ranked.tier;
         entry.rank = ranked.rank;
         entry.lp = ranked.leaguePoints;
+        entry.wins = ranked.wins;
+        entry.losses = ranked.losses;
       } else {
         entry.tier = null;
         entry.rank = null;
         entry.lp = null;
+        entry.wins = null;
+        entry.losses = null;
       }
     } catch (err) {
       console.error(`Erro ao atualizar elo de ${player.riotId}:`, err.message);
